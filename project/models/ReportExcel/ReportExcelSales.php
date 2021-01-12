@@ -1,0 +1,44 @@
+<?php
+
+namespace Project\Models\ReportExcel;
+
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use Project\Models\Report\ReportSales;
+
+class ReportExcelSales extends ReportAbstractExcel
+{
+    // заполняем ексель значениями
+    public function fillCellInExcel($report)
+    {
+        unset($this->metric['name'], $this->metric['category'], $this->metric['brand'], $this->metric['country']);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $y = 1; // вертикальная координата (1, 2, 3, 4 и тд);
+
+        // запускаем цикл, который проходит по каждой метрике, и проверяет существует ли она в отчете
+        foreach ($this->metric as $key => $value) {
+
+            if (ReportSales::checkPropertyExists($report, $key)) {
+                $x = 1; // горизонтальная координата (A, B, C, D и тд);
+
+                // заполняем первый столбец с названием метрики (кол-во заказов, оборот и тд)
+                $sheet->setCellValueByColumnAndRow($x, $y, $this->metric[$key]);
+                $x++;
+
+                // заполняем значение каждой ячейки (значения заказов, значения оборота и тд)
+                for ($i = 0; $i < count($report); $i++) {
+                    $sheet->setCellValueByColumnAndRow($x, $y, $report[$i]->$key);
+                    $x++;
+                }
+                $y++;
+            }
+        }
+        // деляем автоширину для первого столбца и деляем его жирным
+        $spreadsheet->getActiveSheet()->getColumnDimensionByColumn(1)->setAutoSize(true);
+        $spreadsheet->getActiveSheet()->getStyle('A:A')->getFont()->setBold(true);
+        return $spreadsheet;
+    }
+}
